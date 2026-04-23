@@ -11,12 +11,21 @@ import (
 )
 
 // Claims is the standard JWT claims struct across all Dojo services.
+//
+// Multi-tenant fields (CustomerID, OrgID, Role, StoreIDs, Scope) MUST be carried
+// here so downstream services can scope reads/writes to the authenticated tenant
+// without falling back to brittle filters like brand_name LIKE '%...%'.
 type Claims struct {
-	UserID        string `json:"user_id"`
-	Email         string `json:"email"`
-	Name          string `json:"name"`
-	Picture       string `json:"picture"`
-	VerifiedEmail bool   `json:"verified_email"`
+	UserID        string   `json:"user_id"`
+	Email         string   `json:"email"`
+	Name          string   `json:"name"`
+	Picture       string   `json:"picture"`
+	VerifiedEmail bool     `json:"verified_email"`
+	OrgID         string   `json:"org_id,omitempty"`
+	CustomerID    string   `json:"customer_id,omitempty"`
+	Role          string   `json:"role,omitempty"`
+	Scope         string   `json:"scope,omitempty"`
+	StoreIDs      []string `json:"store_ids,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -44,6 +53,32 @@ func GetUserID(ctx context.Context) string {
 func GetEmail(ctx context.Context) string {
 	if c := GetClaims(ctx); c != nil {
 		return c.Email
+	}
+	return ""
+}
+
+// GetCustomerID returns the tenant customer_id from JWT claims, or empty string.
+// Use this as the multi-tenant scope key for any read/write that touches
+// customer-owned data.
+func GetCustomerID(ctx context.Context) string {
+	if c := GetClaims(ctx); c != nil {
+		return c.CustomerID
+	}
+	return ""
+}
+
+// GetOrgID returns the org_id from JWT claims, or empty string.
+func GetOrgID(ctx context.Context) string {
+	if c := GetClaims(ctx); c != nil {
+		return c.OrgID
+	}
+	return ""
+}
+
+// GetRole returns the role from JWT claims, or empty string.
+func GetRole(ctx context.Context) string {
+	if c := GetClaims(ctx); c != nil {
+		return c.Role
 	}
 	return ""
 }

@@ -34,6 +34,11 @@ func validClaims() Claims {
 		Name:          "Dale Yarborough",
 		Picture:       "https://example.com/pic.jpg",
 		VerifiedEmail: true,
+		OrgID:         "org_redlobster",
+		CustomerID:    "4",
+		Role:          "org_admin",
+		Scope:         "all_stores",
+		StoreIDs:      []string{"store_1", "store_2"},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -63,6 +68,15 @@ func TestValidateToken_ValidToken(t *testing.T) {
 	}
 	if !claims.VerifiedEmail {
 		t.Error("VerifiedEmail = false, want true")
+	}
+	if claims.CustomerID != "4" {
+		t.Errorf("CustomerID = %q, want %q", claims.CustomerID, "4")
+	}
+	if claims.OrgID != "org_redlobster" {
+		t.Errorf("OrgID = %q, want %q", claims.OrgID, "org_redlobster")
+	}
+	if claims.Role != "org_admin" {
+		t.Errorf("Role = %q, want %q", claims.Role, "org_admin")
 	}
 }
 
@@ -223,5 +237,36 @@ func TestGetEmail_EmptyWhenNoClaims(t *testing.T) {
 	ctx := context.Background()
 	if email := GetEmail(ctx); email != "" {
 		t.Errorf("expected empty string, got %q", email)
+	}
+}
+
+func TestGetCustomerID_EmptyWhenNoClaims(t *testing.T) {
+	ctx := context.Background()
+	if id := GetCustomerID(ctx); id != "" {
+		t.Errorf("expected empty string, got %q", id)
+	}
+}
+
+func TestGetCustomerID_FromClaims(t *testing.T) {
+	c := validClaims()
+	ctx := context.WithValue(context.Background(), claimsKey, &c)
+	if id := GetCustomerID(ctx); id != "4" {
+		t.Errorf("GetCustomerID = %q, want %q", id, "4")
+	}
+}
+
+func TestGetOrgID_FromClaims(t *testing.T) {
+	c := validClaims()
+	ctx := context.WithValue(context.Background(), claimsKey, &c)
+	if id := GetOrgID(ctx); id != "org_redlobster" {
+		t.Errorf("GetOrgID = %q, want %q", id, "org_redlobster")
+	}
+}
+
+func TestGetRole_FromClaims(t *testing.T) {
+	c := validClaims()
+	ctx := context.WithValue(context.Background(), claimsKey, &c)
+	if r := GetRole(ctx); r != "org_admin" {
+		t.Errorf("GetRole = %q, want %q", r, "org_admin")
 	}
 }
